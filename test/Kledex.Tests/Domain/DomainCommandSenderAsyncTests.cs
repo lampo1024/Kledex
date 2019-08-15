@@ -6,6 +6,7 @@ using Kledex.Dependencies;
 using Kledex.Domain;
 using Kledex.Events;
 using Kledex.Tests.Fakes;
+using Kledex.Transactions;
 using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
@@ -24,6 +25,7 @@ namespace Kledex.Tests.Domain
         private Mock<ICommandStore> _commandStore;
         private Mock<IAggregateStore> _aggregateStore;
         private Mock<IEventFactory> _eventFactory;
+        private Mock<IAmbientTransactionService> _ambientTransactionService;
 
         private Mock<ICommandHandlerAsync<CreateSomething>> _commandHandlerAsync;
         private Mock<IDomainCommandHandlerAsync<CreateAggregate>> _domainCommandHandlerAsync;
@@ -106,13 +108,20 @@ namespace Kledex.Tests.Domain
                 .Setup(x => x.Value)
                 .Returns(new Options());
 
+            _ambientTransactionService = new Mock<IAmbientTransactionService>();
+            _ambientTransactionService
+                .Setup(x => x.Process(It.IsAny<Action>()));
+            _ambientTransactionService
+                .Setup(x => x.ProcessAsync(It.IsAny<Func<Task>>()));
+
             _sut = new DomainCommandSender(_handlerResolver.Object,
                 _eventPublisher.Object,
                 _eventFactory.Object,
                 _aggregateStore.Object,
                 _commandStore.Object,
                 _eventStore.Object,
-                _optionsMock.Object);
+                _optionsMock.Object,
+                _ambientTransactionService.Object);
         }
 
         [Test]
@@ -170,7 +179,8 @@ namespace Kledex.Tests.Domain
                 _aggregateStore.Object,
                 _commandStore.Object,
                 _eventStore.Object,
-                _optionsMock.Object);
+                _optionsMock.Object,
+                _ambientTransactionService.Object);
 
             await _sut.SendAsync<CreateAggregate, Aggregate>(_createAggregate);
             _eventPublisher.Verify(x => x.PublishAsync(_aggregateCreatedConcrete), Times.Never);
