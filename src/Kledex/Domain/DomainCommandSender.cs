@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Kledex.Commands;
 using Kledex.Dependencies;
 using Kledex.Events;
-using Kledex.Transactions;
 using Microsoft.Extensions.Options;
 using Options = Kledex.Configuration.Options;
 
@@ -19,7 +18,6 @@ namespace Kledex.Domain
         private readonly ICommandStore _commandStore;
         private readonly IEventStore _eventStore;
         private readonly Options _options;
-        private readonly IAmbientTransactionService _ambientTransactionService;
 
         private bool PublishEvents(ICommand command) => command.PublishEvents ?? _options.PublishEvents;
 
@@ -29,8 +27,7 @@ namespace Kledex.Domain
             IAggregateStore aggregateStore,
             ICommandStore commandStore,
             IEventStore eventStore, 
-            IOptions<Options> options,
-            IAmbientTransactionService ambientTransactionService)
+            IOptions<Options> options)
         {
             _handlerResolver = handlerResolver;
             _eventPublisher = eventPublisher;
@@ -39,7 +36,6 @@ namespace Kledex.Domain
             _commandStore = commandStore;
             _eventStore = eventStore;            
             _options = options.Value;
-            _ambientTransactionService = ambientTransactionService;
         }
 
         /// <inheritdoc />
@@ -52,28 +48,25 @@ namespace Kledex.Domain
 
             var handler = _handlerResolver.ResolveHandler<IDomainCommandHandlerAsync<TCommand>>();
 
-            await _ambientTransactionService.ProcessAsync(async () =>
+            var aggregateTask = _aggregateStore.SaveAggregateAsync<TAggregate>(command.AggregateRootId);
+            var commandTask = _commandStore.SaveCommandAsync<TAggregate>(command);
+            var eventsTask = handler.HandleAsync(command);
+
+            await Task.WhenAll(aggregateTask, commandTask, eventsTask);
+
+            var publishEvents = PublishEvents(command);
+            var events = await eventsTask;
+
+            foreach (var @event in events)
             {
-                var aggregateTask = _aggregateStore.SaveAggregateAsync<TAggregate>(command.AggregateRootId);
-                var commandTask = _commandStore.SaveCommandAsync<TAggregate>(command);
-                var eventsTask = handler.HandleAsync(command);
+                @event.Update(command);
+                var concreteEvent = _eventFactory.CreateConcreteEvent(@event);
 
-                await Task.WhenAll(aggregateTask, commandTask, eventsTask);
+                await _eventStore.SaveEventAsync<TAggregate>((IDomainEvent)concreteEvent, command.ExpectedVersion);
 
-                var publishEvents = PublishEvents(command);
-                var events = await eventsTask;
-
-                foreach (var @event in events)
-                {
-                    @event.Update(command);
-                    var concreteEvent = _eventFactory.CreateConcreteEvent(@event);
-
-                    await _eventStore.SaveEventAsync<TAggregate>((IDomainEvent)concreteEvent, command.ExpectedVersion);
-
-                    if (publishEvents)
-                        await _eventPublisher.PublishAsync(concreteEvent);
-                }
-            });
+                if (publishEvents)
+                    await _eventPublisher.PublishAsync(concreteEvent);
+            }
         }
 
         /// <inheritdoc />

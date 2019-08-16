@@ -25,7 +25,6 @@ namespace Kledex.Tests.Domain
         private Mock<ICommandStore> _commandStore;
         private Mock<IAggregateStore> _aggregateStore;
         private Mock<IEventFactory> _eventFactory;
-        private Mock<IAmbientTransactionService> _ambientTransactionService;
 
         private Mock<ICommandHandler<CreateSomething>> _commandHandler;
         private Mock<IDomainCommandHandler<CreateAggregate>> _domainCommandHandler;
@@ -103,20 +102,13 @@ namespace Kledex.Tests.Domain
                 .Setup(x => x.Value)
                 .Returns(new Options());
 
-            _ambientTransactionService = new Mock<IAmbientTransactionService>();
-            _ambientTransactionService
-                .Setup(x => x.Process(It.IsAny<Action>()));
-            _ambientTransactionService
-                .Setup(x => x.ProcessAsync(It.IsAny<Func<Task>>()));
-
             _sut = new DomainCommandSender(_handlerResolver.Object,
                 _eventPublisher.Object,
                 _eventFactory.Object,
                 _aggregateStore.Object,
                 _commandStore.Object,
                 _eventStore.Object,
-                _optionsMock.Object,
-                _ambientTransactionService.Object);
+                _optionsMock.Object);
         }
 
         [Test]
@@ -174,8 +166,7 @@ namespace Kledex.Tests.Domain
                 _aggregateStore.Object,
                 _commandStore.Object,
                 _eventStore.Object,
-                _optionsMock.Object,
-                _ambientTransactionService.Object);
+                _optionsMock.Object);
 
             _sut.Send<CreateAggregate, Aggregate>(_createAggregate);
             _eventPublisher.Verify(x => x.Publish(_aggregateCreatedConcrete), Times.Never);
