@@ -7,25 +7,6 @@ namespace Kledex.Transactions
     public class AmbientTransactionService : IAmbientTransactionService
     {
         /// <inheritdoc />
-        public void Process(Action execute)
-        {
-            using (var scope = new TransactionScope(
-                 TransactionScopeOption.Required,
-                 new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }))
-            {
-                try
-                {
-                    execute();
-                    scope.Complete();
-                }
-                catch (Exception)
-                {
-                    // TODO: Handle failure
-                }
-            }
-        }
-
-        /// <inheritdoc />
         public async Task ProcessAsync(Func<Task> execute)
         {
             using (var scope = new TransactionScope(
@@ -36,6 +17,25 @@ namespace Kledex.Transactions
                 try
                 {
                     await execute();
+                    scope.Complete();
+                }
+                catch (Exception)
+                {
+                    // TODO: Handle failure
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Process(Action execute)
+        {
+            using (var scope = new TransactionScope(
+                 TransactionScopeOption.Required,
+                 new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted }))
+            {
+                try
+                {
+                    execute();
                     scope.Complete();
                 }
                 catch (Exception)

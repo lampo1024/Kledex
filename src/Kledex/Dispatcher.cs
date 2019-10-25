@@ -4,6 +4,7 @@ using Kledex.Commands;
 using Kledex.Domain;
 using Kledex.Events;
 using Kledex.Queries;
+using Kledex.Transactions;
 
 namespace Kledex
 {
@@ -19,24 +20,27 @@ namespace Kledex
         private readonly IEventPublisher _eventPublisher;
         private readonly IQueryProcessor _queryProcessor;
         private readonly IBusMessageDispatcher _busMessageDispatcher;
+        private readonly ITransactionalDispatcher _transactionalDispatcher;
 
         public Dispatcher(ICommandSender commandSender,
             IDomainCommandSender domainCommandSender,
             IEventPublisher eventPublisher, 
             IQueryProcessor queryProcessor, 
-            IBusMessageDispatcher busMessageDispatcher)
+            IBusMessageDispatcher busMessageDispatcher,
+            ITransactionalDispatcher transactionalDispatcher)
         {
             _commandSender = commandSender;
             _domainCommandSender = domainCommandSender;
             _eventPublisher = eventPublisher;
             _queryProcessor = queryProcessor;
-            _busMessageDispatcher = busMessageDispatcher;            
+            _busMessageDispatcher = busMessageDispatcher;
+            _transactionalDispatcher = transactionalDispatcher;
         }
 
         /// <inheritdoc />
         public Task SendAsync<TCommand>(TCommand command) where TCommand : ICommand
         {
-            return _commandSender.SendAsync(command);
+            return _transactionalDispatcher.DispatchAsync(command, () => _commandSender.SendAsync(command));
         }
 
         /// <inheritdoc />
@@ -44,13 +48,13 @@ namespace Kledex
             where TCommand : IDomainCommand 
             where TAggregate : IAggregateRoot
         {
-            return _domainCommandSender.SendAsync<TCommand, TAggregate>(command);
+            return _transactionalDispatcher.DispatchAsync(command, () => _domainCommandSender.SendAsync<TCommand, TAggregate>(command));
         }
 
         /// <inheritdoc />
         public Task PublishAsync<TEvent>(TEvent @event) where TEvent : IEvent
         {
-            return _eventPublisher.PublishAsync(@event);
+            return _transactionalDispatcher.DispatchAsync(@event, () => _eventPublisher.PublishAsync(@event));
         }
 
         /// <inheritdoc />
@@ -68,7 +72,7 @@ namespace Kledex
         /// <inheritdoc />
         public void Send<TCommand>(TCommand command) where TCommand : ICommand
         {
-            _commandSender.Send(command);
+            _transactionalDispatcher.Dispatch(command, () => _commandSender.Send(command));
         }
 
         /// <inheritdoc />
@@ -76,13 +80,13 @@ namespace Kledex
             where TCommand : IDomainCommand 
             where TAggregate : IAggregateRoot
         {
-            _domainCommandSender.Send<TCommand, TAggregate>(command);
+            _transactionalDispatcher.Dispatch(command, () => _domainCommandSender.Send<TCommand, TAggregate>(command));
         }
 
         /// <inheritdoc />
         public void Publish<TEvent>(TEvent @event) where TEvent : IEvent
         {
-            _eventPublisher.Publish(@event);
+            _transactionalDispatcher.Dispatch(@event, () => _eventPublisher.Publish(@event));
         }
 
         /// <inheritdoc />

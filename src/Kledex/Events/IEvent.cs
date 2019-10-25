@@ -2,5 +2,6 @@
 {
     public interface IEvent
     {
+        bool? UseAmbientTransaction { get; set; }
     }
 }

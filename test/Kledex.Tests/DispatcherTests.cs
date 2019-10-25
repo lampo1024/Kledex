@@ -5,6 +5,7 @@ using Kledex.Domain;
 using Kledex.Events;
 using Kledex.Queries;
 using Kledex.Tests.Fakes;
+using Kledex.Transactions;
 using Moq;
 using NUnit.Framework;
 
@@ -76,7 +77,8 @@ namespace Kledex.Tests
                 _domainCommandSender.Object,
                 _eventPublisher.Object,
                 _queryDispatcher.Object,
-                _busMessageDispatcher.Object);
+                _busMessageDispatcher.Object,
+                new Mock<ITransactionalDispatcher>().Object);
         }
 
         [Test]
