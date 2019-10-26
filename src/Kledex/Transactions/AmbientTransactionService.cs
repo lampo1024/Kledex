@@ -11,7 +11,7 @@ namespace Kledex.Transactions
         {
             using (var scope = new TransactionScope(
                 TransactionScopeOption.Required,
-                new TransactionOptions { IsolationLevel = IsolationLevel.ReadUncommitted },
+                new TimeSpan(0,5,0,0,0),
                 TransactionScopeAsyncFlowOption.Enabled))
             {
                 try
@@ -19,9 +19,10 @@ namespace Kledex.Transactions
                     await execute();
                     scope.Complete();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // TODO: Handle failure
+                    var xxx = ex;
                 }
             }
         }

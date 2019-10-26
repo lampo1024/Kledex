@@ -13,7 +13,7 @@
         public bool SaveCommandData { get; set; } = true;
 
         /// <summary>
-        /// The value indicating whether events are published automatically. Default value is true.
+        /// The value indicating whether events are published automatically. Default value is false.
         /// </summary>
         public bool UseAmbientTransactions { get; set; } = false;
     }

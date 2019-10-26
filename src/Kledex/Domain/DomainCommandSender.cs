@@ -63,7 +63,7 @@ namespace Kledex.Domain
                 var concreteEvent = _eventFactory.CreateConcreteEvent(@event);
 
                 await _eventStore.SaveEventAsync<TAggregate>((IDomainEvent)concreteEvent, command.ExpectedVersion);
-
+                //throw new Exception("OOOPS!!!");
                 if (publishEvents)
                     await _eventPublisher.PublishAsync(concreteEvent);
             }

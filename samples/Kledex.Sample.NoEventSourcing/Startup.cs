@@ -4,6 +4,8 @@ using Kledex.Sample.NoEventSourcing.Data;
 using Kledex.Sample.NoEventSourcing.Domain;
 using Kledex.Store.Cosmos.Sql.Configuration;
 using Kledex.Store.Cosmos.Sql.Extensions;
+using Kledex.Store.EF.Extensions;
+using Kledex.Store.EF.SqlServer;
 using Kledex.UI.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -43,7 +45,14 @@ namespace Kledex.Sample.NoEventSourcing
 
             services
                 .AddKledex(typeof(Product))
-                .AddCosmosDbSqlProvider(Configuration)
+                .AddOptions(opt =>
+                {
+                    opt.PublishEvents = true;
+                    opt.SaveCommandData = true;
+                    opt.UseAmbientTransactions = true;
+                })
+                //.AddCosmosDbSqlProvider(Configuration)
+                .AddSqlServerProvider(Configuration)
                 .AddServiceBusProvider(Configuration)
                 .AddUI();
 
@@ -54,7 +63,8 @@ namespace Kledex.Sample.NoEventSourcing
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, SampleDbContext dbContext, IOptions<DomainDbConfiguration> settings)
         {
             dbContext.Database.EnsureCreated();
-            app.UseKledex().EnsureCosmosDbSqlDbCreated(settings);
+            app.UseKledex().EnsureDomainDbCreated();
+            //app.UseKledex().EnsureCosmosDbSqlDbCreated(settings);
 
             if (env.IsDevelopment())
             {
