@@ -21,10 +21,11 @@ namespace Kledex.Store.EF.Stores
         }
 
         /// <inheritdoc />
-        public async Task SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
+        public async Task<object> SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
         {
             using (var dbContext = _dbContextFactory.CreateDbContext())
             {
+                var dbContentTransaction = dbContext.Database.BeginTransaction();
                 var aggregateEntity = await dbContext.Aggregates.FirstOrDefaultAsync(x => x.Id == id);               
                 if (aggregateEntity == null)
                 {
@@ -32,6 +33,7 @@ namespace Kledex.Store.EF.Stores
                     await dbContext.Aggregates.AddAsync(newAggregateEntity);
                     await dbContext.SaveChangesAsync();
                 }
+                return dbContentTransaction;
             }
         }
 

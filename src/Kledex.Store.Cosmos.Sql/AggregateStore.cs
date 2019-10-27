@@ -22,7 +22,7 @@ namespace Kledex.Store.Cosmos.Sql
         }
 
         /// <inheritdoc />
-        public async Task SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
+        public async Task<object> SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
         {
             var aggregateDocument = await _aggregateRepository.GetDocumentAsync(id.ToString());
             if (aggregateDocument == null)
@@ -30,6 +30,7 @@ namespace Kledex.Store.Cosmos.Sql
                 var newAggregateDocument = _aggregateDocumentFactory.CreateAggregate<TAggregate>(id);
                 await _aggregateRepository.CreateDocumentAsync(newAggregateDocument);
             }
+            return null;
         }
 
         /// <inheritdoc />

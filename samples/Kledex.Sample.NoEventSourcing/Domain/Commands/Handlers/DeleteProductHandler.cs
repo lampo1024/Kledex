@@ -30,7 +30,7 @@ namespace Kledex.Sample.NoEventSourcing.Domain.Commands.Handlers
 
             await _dbContext.SaveChangesAsync();
 
-            return new List<IDomainEvent>()
+            return new List<IDomainEvent>
             {
                 new ProductDeleted
                 {

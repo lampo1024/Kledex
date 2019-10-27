@@ -12,7 +12,7 @@ namespace Kledex.Domain
         /// <typeparam name="TAggregate">The type of the aggregate.</typeparam>
         /// <param name="id">The identifier.</param>
         /// <returns></returns>
-        Task SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot;
+        Task<object> SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot;
 
         /// <summary>
         /// Saves the aggregate.
@@ -51,7 +51,7 @@ namespace Kledex.Domain
             throw new NotImplementedException(Consts.StoreRequiredMessage);
         }
 
-        public Task SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
+        public Task<object> SaveAggregateAsync<TAggregate>(Guid id) where TAggregate : IAggregateRoot
         {
             throw new NotImplementedException(Consts.StoreRequiredMessage);
         }
